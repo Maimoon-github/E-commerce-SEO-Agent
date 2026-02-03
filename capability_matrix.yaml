@@ -1,0 +1,300 @@
+# capability_matrix.yaml
+# AurumSEO Operator - Capability & Control Matrix
+# Flags:
+# - read_only: action only reads data; no external state mutation
+# - requires_approval: action may write/mutate external systems; must pass approval gate
+# - blocked: action must never run (hard boundary)
+# Notes:
+# - "risk_default" is an initial risk score (0-5) used by QA guardrails.
+# - "scopes" are conceptual permission scopes; implement via your auth/credential layer.
+
+version: "1.0"
+agent: "AurumSEO Operator"
+domain: "https://aurumpickleball.com"
+markets: ["US", "EU", "AU"]
+
+actions:
+  # ----------------------------
+  # Observability / Data Ingest
+  # ----------------------------
+  - id: "gsc.fetch_search_analytics"
+    description: "Fetch Search Console search analytics (queries/pages/CTR/position)."
+    domain_area: "analytics"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["gsc.readonly"]
+
+  - id: "gsc.fetch_index_coverage"
+    description: "Fetch Search Console index coverage/exclusions."
+    domain_area: "technical_seo"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["gsc.readonly"]
+
+  - id: "gsc.fetch_sitemaps"
+    description: "Fetch Search Console sitemap status."
+    domain_area: "technical_seo"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["gsc.readonly"]
+
+  - id: "ga4.fetch_landing_page_performance"
+    description: "Fetch GA4 landing-page sessions, revenue, conversion rate, and AOV."
+    domain_area: "analytics"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["ga4.readonly"]
+
+  - id: "serp.fetch_snapshot"
+    description: "Fetch SERP snapshot for target keywords (features, top URLs, intent signals)."
+    domain_area: "serp_intel"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 1
+    scopes: ["serp.readonly"]
+
+  - id: "crawl.fetch_site_snapshot"
+    description: "Run/ingest crawler snapshot (status codes, titles, canonicals, headings, schema presence)."
+    domain_area: "technical_seo"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 1
+    scopes: ["crawl.readonly"]
+
+  - id: "performance.fetch_cwv"
+    description: "Fetch Core Web Vitals signals (PageSpeed/CrUX where available)."
+    domain_area: "technical_seo"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 1
+    scopes: ["performance.readonly"]
+
+  - id: "backlinks.fetch_profile"
+    description: "Fetch backlink profile snapshot (ref domains, anchors, velocity signals)."
+    domain_area: "authority"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 1
+    scopes: ["backlinks.readonly"]
+
+  # ----------------------------
+  # Analysis / Planning (Internal)
+  # ----------------------------
+  - id: "analyze.detect_anomalies"
+    description: "Detect anomalies (CTR drops, impressions drops, rank drops, revenue lander regressions)."
+    domain_area: "analytics"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["internal.compute"]
+
+  - id: "analyze.classify_issues"
+    description: "Classify SEO issues (indexation, CWV, schema, duplication, cannibalization, etc.)."
+    domain_area: "seo_strategy"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["internal.compute"]
+
+  - id: "plan.score_opportunities"
+    description: "Score opportunities using (Impact × Confidence) / Effort with risk guardrails."
+    domain_area: "seo_strategy"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["internal.compute"]
+
+  - id: "plan.generate_changeset"
+    description: "Generate ChangeSet proposals (diffs + QA checks + rollback plan) without executing."
+    domain_area: "seo_strategy"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["internal.compute"]
+
+  - id: "plan.generate_content_brief"
+    description: "Generate SEO content brief (intent, outline, entities, FAQs, internal links)."
+    domain_area: "content"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["internal.compute"]
+
+  - id: "plan.generate_outreach_plan"
+    description: "Generate ethical outreach plan (targets + angles + assets needed). No sending."
+    domain_area: "authority"
+    read_only: true
+    requires_approval: false
+    blocked: false
+    risk_default: 0
+    scopes: ["internal.compute"]
+
+  # ----------------------------
+  # Ticketing / Workflow Ops
+  # ----------------------------
+  - id: "ops.create_ticket"
+    description: "Create a task/ticket (Jira/Asana/Trello/GitHub) with evidence and acceptance criteria."
+    domain_area: "operations"
+    read_only: false
+    requires_approval: false
+    blocked: false
+    risk_default: 1
+    scopes: ["tickets.write"]
+
+  - id: "ops.update_ticket"
+    description: "Update an existing ticket with new evidence, status, or validation results."
+    domain_area: "operations"
+    read_only: false
+    requires_approval: false
+    blocked: false
+    risk_default: 1
+    scopes: ["tickets.write"]
+
+  - id: "ops.persist_run_state"
+    description: "Persist run state, outputs, and audit logs to the state store (Postgres/BigQuery)."
+    domain_area: "operations"
+    read_only: false
+    requires_approval: false
+    blocked: false
+    risk_default: 1
+    scopes: ["db.write"]
+
+  # ----------------------------
+  # CMS / Storefront Writes (Approval-gated)
+  # ----------------------------
+  - id: "cms.update_meta"
+    description: "Update title tag and meta description on specific URLs/templates."
+    domain_area: "on_page"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 3
+    scopes: ["cms.write.meta"]
+
+  - id: "cms.update_headings"
+    description: "Update H1/H2 structure on specific URLs/templates."
+    domain_area: "on_page"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 3
+    scopes: ["cms.write.content"]
+
+  - id: "cms.update_body_copy"
+    description: "Update on-page copy modules (category/PDP) with brand-safe content."
+    domain_area: "on_page"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 3
+    scopes: ["cms.write.content"]
+
+  - id: "cms.add_internal_links"
+    description: "Add/update internal linking blocks and anchors (approved module only)."
+    domain_area: "internal_linking"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 3
+    scopes: ["cms.write.content"]
+
+  - id: "cms.update_schema_jsonld"
+    description: "Update/patch JSON-LD schema (Product/Offer/Review/Breadcrumb/Organization)."
+    domain_area: "structured_data"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 4
+    scopes: ["cms.write.template", "schema.write"]
+
+  - id: "cms.update_canonicals"
+    description: "Update canonical tags for specific pages/variants."
+    domain_area: "technical_seo"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 4
+    scopes: ["cms.write.template"]
+
+  - id: "cms.update_robots_or_sitemaps"
+    description: "Modify robots directives or sitemap generation/links."
+    domain_area: "technical_seo"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 5
+    scopes: ["cms.write.infra"]
+
+  - id: "cms.publish_content"
+    description: "Publish new content pages/posts from approved drafts."
+    domain_area: "content"
+    read_only: false
+    requires_approval: true
+    blocked: false
+    risk_default: 3
+    scopes: ["cms.write.publish"]
+
+  # ----------------------------
+  # Prohibited / Hard Blocks
+  # ----------------------------
+  - id: "authority.send_outreach_emails"
+    description: "Send outreach emails automatically."
+    domain_area: "authority"
+    read_only: false
+    requires_approval: true
+    blocked: true
+    risk_default: 5
+    scopes: ["email.send"]
+
+  - id: "authority.build_links_paid_or_pbn"
+    description: "Any paid link building, PBN usage, or manipulative schemes."
+    domain_area: "authority"
+    read_only: false
+    requires_approval: false
+    blocked: true
+    risk_default: 5
+    scopes: []
+
+  - id: "seo.cloaking_or_doorway_pages"
+    description: "Cloaking, doorway pages, scraped content, fake reviews, policy violations."
+    domain_area: "policy"
+    read_only: false
+    requires_approval: false
+    blocked: true
+    risk_default: 5
+    scopes: []
+
+  - id: "store.modify_pricing_or_checkout"
+    description: "Change pricing, checkout, payments, taxes, shipping calculations."
+    domain_area: "commerce"
+    read_only: false
+    requires_approval: false
+    blocked: true
+    risk_default: 5
+    scopes: []
+
+  - id: "security.expose_or_store_credentials"
+    description: "Expose, log, or store API secrets in prompts/state/memory/logs."
+    domain_area: "security"
+    read_only: false
+    requires_approval: false
+    blocked: true
+    risk_default: 5
+    scopes: []
