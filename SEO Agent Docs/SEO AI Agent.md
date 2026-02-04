@@ -301,6 +301,7 @@ Each task includes: **evidence, root cause hypothesis, fix steps, owner, effort,
 
 **Optional structured format (example task object):**
 
+```
 {  
   "task\_id": "SEO-2419",  
   "type": "ON\_PAGE\_OPTIMIZATION",  
@@ -320,6 +321,7 @@ Each task includes: **evidence, root cause hypothesis, fix steps, owner, effort,
   "kpi\_target": { "ctr\_lift": 0.15 },  
   "approval\_required": true  
 }
+```
 
 ---
 

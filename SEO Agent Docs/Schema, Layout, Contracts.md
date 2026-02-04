@@ -18,6 +18,7 @@ This follows the “Observe → Diagnose → Recommend → Approve → Execute �
 * IDs are deterministic: `sha256(run_id + stable_key_fields)` truncated to 16 chars.  
 * No node may write outside its owned fields (ownership table below).
 
+```
 from \_\_future\_\_ import annotations
 
 from pydantic import BaseModel, Field  
@@ -281,7 +282,7 @@ class AurumSEOState(BaseModel):
 
     audit\_log: List\[AuditEvent\] \= Field(default\_factory=list)  
     errors: List\[ErrorEvent\] \= Field(default\_factory=list)
-
+```
 ---
 
 ## **1.2 Field ownership (who is allowed to write what)**
@@ -350,6 +351,7 @@ class AurumSEOState(BaseModel):
 
 ### **Direct edges**
 
+```
 START  
   \-\> collect\_gsc  
   \-\> collect\_ga4  
@@ -360,11 +362,13 @@ START
   \-\> classify\_issues  
   \-\> score\_opportunities  
   \-\> route\_by\_type\_and\_priority
+```
 
 ### **Conditional edges from `route_by_type_and_priority`**
 
 Let `next_id = plan.work_queue[0]` if exists.
 
+```
 route\_by\_type\_and\_priority:  
   IF plan.work\_queue is empty \-\> qa\_guardrail\_node
 
@@ -374,13 +378,16 @@ route\_by\_type\_and\_priority:
     IF "PRODUCT"   \-\> productseo\_agent\_node  
     IF "CONTENT"   \-\> content\_agent\_node  
     IF "AUTHORITY" \-\> authority\_agent\_node
+```
 
 ### **Loop edges back to router (deterministic batching)**
 
+```
 techseo\_agent\_node      \-\> route\_by\_type\_and\_priority  
 productseo\_agent\_node   \-\> route\_by\_type\_and\_priority  
 content\_agent\_node      \-\> route\_by\_type\_and\_priority  
 authority\_agent\_node    \-\> route\_by\_type\_and\_priority
+```
 
 ### **Conditional edges from `qa_guardrail_node`**
 
@@ -390,24 +397,30 @@ Define:
 * `requires_approval = any(cs.approval_required for cs in plan.changesets)`  
 * `has_high_risk = any(max(op.risk for op in cs.operations) >= R for cs in plan.changesets)`
 
+```
 qa\_guardrail\_node:  
   IF plan.changesets is empty \-\> create\_tickets\_node
 
   ELSE IF requires\_approval OR has\_high\_risk \-\> approval\_interrupt\_node
 
   ELSE \-\> execute\_changeset\_node
+```
 
 ### **Conditional edges from `approval_interrupt_node`**
 
 Assume `approval_interrupt_node` pauses until `approvals.decisions` is populated externally.
 
+```
 approval\_interrupt\_node:  
   IF approvals.status in \["APPROVED", "PARTIAL"\] \-\> execute\_changeset\_node  
   IF approvals.status \== "REJECTED"              \-\> create\_tickets\_node
+```
 
 ### **Post-execution**
 
+```
 execute\_changeset\_node \-\> create\_tickets\_node \-\> validate\_metrics\_node \-\> persist\_run\_node \-\> END
+```
 
 ---
 
@@ -417,6 +430,7 @@ execute\_changeset\_node \-\> create\_tickets\_node \-\> validate\_metrics\_node
 
 ### **3.1.1 `Opportunity` JSON contract**
 
+```
 {  
   "opportunity\_id": "string(16)",  
   "opportunity\_type": "TECH|PRODUCT|CONTENT|AUTHORITY",  
@@ -433,9 +447,11 @@ execute\_changeset\_node \-\> create\_tickets\_node \-\> validate\_metrics\_node
   "priority\_score": 0.0,  
   "rationale": "string"  
 }
+```
 
 ### **3.1.2 `ChangeSet` JSON contract**
 
+```
 {  
   "changeset\_id": "string(16)",  
   "kind": "TECH\_FIX|PRODUCT\_PDP\_UPDATE|CATEGORY\_UPDATE|META\_UPDATE|INTERNAL\_LINKS\_UPDATE|CONTENT\_BRIEF|CONTENT\_REFRESH|AUTHORITY\_OUTREACH\_PLAN",  
@@ -459,11 +475,13 @@ execute\_changeset\_node \-\> create\_tickets\_node \-\> validate\_metrics\_node
   "rollback\_plan": { "any": "json" },  
   "notes": "string"  
 }
+```
 
 ### **3.1.3 State patch contract (every node returns)**
 
 Each node returns a **partial state patch** with only owned fields.
 
+```
 {  
   "audit\_log\_append": \[  
     { "ts": "iso8601", "node": "string", "event": "START|END|TOOL\_CALL|WARN|ERROR", "detail": {} }  
@@ -472,6 +490,7 @@ Each node returns a **partial state patch** with only owned fields.
     { "ts": "iso8601", "node": "string", "error\_type": "string", "message": "string", "context": {} }  
   \]  
 }
+```
 
 ---
 
@@ -493,6 +512,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
 
 **OUTPUT (state patch)**
 
+```
 {  
   "inputs": {  
     "gsc": {  
@@ -505,6 +525,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
     }  
   }  
 }
+```
 
 ---
 
@@ -520,6 +541,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
 
 **OUTPUT**
 
+```
 {  
   "inputs": {  
     "ga4": {  
@@ -530,6 +552,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
     }  
   }  
 }
+```
 
 ---
 
@@ -545,6 +568,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
 
 **OUTPUT**
 
+```
 {  
   "inputs": {  
     "serp": {  
@@ -554,6 +578,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
     }  
   }  
 }
+```
 
 ---
 
@@ -569,6 +594,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
 
 **OUTPUT**
 
+```
 {  
   "inputs": {  
     "crawl": {  
@@ -579,6 +605,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
     }  
   }  
 }
+```
 
 ---
 
@@ -596,11 +623,13 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
 
 **OUTPUT**
 
+```
 {  
   "audit\_log\_append": \[  
     { "ts": "iso8601", "node": "normalize\_inputs", "event": "END", "detail": { "normalized": true } }  
   \]  
 }
+```
 
 (If you want strict normalized storage, add `inputs_normalized` to state and assign ownership to this node.)
 
@@ -618,11 +647,13 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
 
 **OUTPUT**
 
+```
 {  
   "audit\_log\_append": \[  
     { "ts": "iso8601", "node": "detect\_anomalies", "event": "END", "detail": { "anomaly\_scan": "complete" } }  
   \]  
 }
+```
 
 ---
 
@@ -638,6 +669,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
 
 **OUTPUT**
 
+```
 {  
   "findings": {  
     "issues": \[  
@@ -655,6 +687,7 @@ For each node: **READS**, **WRITES**, and the **exact mutation**.
     \]  
   }  
 }
+```
 
 ---
 
@@ -684,6 +717,7 @@ Then build `plan.work_queue` by iterating `market_order` and preserving ranked o
 
 **OUTPUT**
 
+```
 {  
   "findings": { "opportunities": \[ /\* Opportunity\[\] \*/ \] },  
   "scores": {  
@@ -695,6 +729,7 @@ Then build `plan.work_queue` by iterating `market_order` and preserving ranked o
     "plan\_created\_at": "iso8601"  
   }  
 }
+```
 
 ---
 
@@ -716,12 +751,14 @@ Then build `plan.work_queue` by iterating `market_order` and preserving ranked o
 
 **OUTPUT**
 
+```
 {  
   "plan": {  
     "in\_progress": "op1",  
     "work\_queue": \["op2"\]  
   }  
 }
+```
 
 ---
 
@@ -743,6 +780,7 @@ Each specialist node **must**:
 
 **OUTPUT**
 
+```
 {  
   "plan": {  
     "in\_progress": null,  
@@ -773,6 +811,7 @@ Each specialist node **must**:
     \]  
   }  
 }
+```
 
 ### **Node: `productseo_agent_node`**
 
@@ -815,6 +854,7 @@ Kinds:
 
 **OUTPUT**
 
+```
 {  
   "approvals": { "required": true, "status": "PENDING", "decisions": \[\] },  
   "plan": {  
@@ -823,6 +863,7 @@ Kinds:
     \]  
   }  
 }
+```
 
 ---
 
@@ -845,6 +886,7 @@ Kinds:
 
 **OUTPUT**
 
+```
 {  
   "approvals": {  
     "status": "PARTIAL",  
@@ -858,6 +900,7 @@ Kinds:
     \]  
   }  
 }
+```
 
 ---
 
@@ -882,6 +925,7 @@ All others are skipped and converted into tickets later.
 
 **OUTPUT**
 
+```
 {  
   "execution": {  
     "applied\_changesets": \["cs1"\],  
@@ -896,6 +940,7 @@ All others are skipped and converted into tickets later.
     \]  
   }  
 }
+```
 
 ---
 
@@ -918,6 +963,7 @@ All others are skipped and converted into tickets later.
 
 **OUTPUT**
 
+```
 {  
   "plan": {  
     "tickets": \[  
@@ -933,6 +979,7 @@ All others are skipped and converted into tickets later.
     \]  
   }  
 }
+```
 
 ---
 
@@ -957,6 +1004,7 @@ All others are skipped and converted into tickets later.
 
 **OUTPUT**
 
+```
 {  
   "validation": {  
     "pre\_metrics": { "org\_revenue\_28d": 12000 },  
@@ -965,6 +1013,7 @@ All others are skipped and converted into tickets later.
     "validated\_at": "iso8601"  
   }  
 }
+```
 
 ---
 
@@ -980,11 +1029,13 @@ All others are skipped and converted into tickets later.
 
 **OUTPUT**
 
+```
 {  
   "audit\_log\_append": \[  
     { "ts": "iso8601", "node": "persist\_run\_node", "event": "END", "detail": { "persisted": true } }  
   \]  
 }
+```
 
 ---
 
@@ -1057,6 +1108,7 @@ Each task receives the shared `AurumSEOState` as `context` and returns a **state
 
 ### **Deterministic specialist routing**
 
+```
 Task\_RouteNextOpportunity:  
   IF queue\_empty \-\> Task\_QAGuardrail  
   ELSE:  
@@ -1067,9 +1119,11 @@ Task\_RouteNextOpportunity:
       CONTENT   \-\> Task\_GenerateContentChangeSet  
       AUTHORITY \-\> Task\_GenerateAuthorityChangeSet  
   After specialist \-\> Task\_RouteNextOpportunity
+```
 
 ### **Approval routing**
 
+```
 Task\_QAGuardrail:  
   IF plan.changesets is empty \-\> Task\_CreateTickets  
   ELSE IF approvals.required \-\> Task\_ApprovalGate  
@@ -1078,13 +1132,15 @@ Task\_QAGuardrail:
 Task\_ApprovalGate:  
   IF approvals.status in \["APPROVED","PARTIAL"\] \-\> Task\_ExecuteApprovedChangeSets  
   IF approvals.status \== "REJECTED"             \-\> Task\_CreateTickets
+```
 
 ---
 
 ## **4.4 CrewAI Flow skeleton (engineer-ready outline)**
 
-\# Pseudocode structure that mirrors the routing exactly (names are exact)
+# Pseudocode structure that mirrors the routing exactly (names are exact)
 
+```
 from crewai.flow import Flow, start, listen
 
 class AurumSEO\_Flow(Flow):
@@ -1110,6 +1166,7 @@ class AurumSEO\_Flow(Flow):
     @listen(Task\_ScoreOpportunitiesAndBuildQueue)  
     def Task\_RouteNextOpportunity(self, state): ...  
     \# inside: deterministic routing \+ calls to specialist tasks
+```
 
 (You’ll implement the loop by calling the next task method based on the explicit conditions above.)
 
@@ -1127,11 +1184,3 @@ class AurumSEO\_Flow(Flow):
 ## **5.2 No secrets in state**
 
 The schema holds **integration references only**, not tokens/keys. Credentials remain in your runtime secret manager.
-
----
-
-If you want, I can also generate:
-
-* the **LangGraph `StateGraph` builder code** (`add_node`, `add_edge`, `add_conditional_edges`) using these exact node names, and  
-* a **JSON Schema file** for `ChangeSet`, `Opportunity`, and node patches so CI can validate every run.
-

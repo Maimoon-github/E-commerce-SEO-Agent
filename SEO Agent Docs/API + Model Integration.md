@@ -71,7 +71,9 @@ https://www.googleapis.com/auth/analytics.readonly
 
 **Flow**
 
+```
 Tool → Google SDK → OAuth token → API
+```
 
 **Why**
 
@@ -87,9 +89,11 @@ Tool → Google SDK → OAuth token → API
 * Rate-limited at tool level  
 * Query whitelisting (only Google search endpoints)
 
+```
 def serp\_lookup(query: str):  
     assert is\_allowed\_query(query)  
     return call\_serp\_api(query)
+```
 
 ---
 
@@ -176,6 +180,7 @@ Used for:
 
 ### **Tool-first agent (recommended)**
 
+```
 agent \= Agent(  
   llm=planner\_model,  
   tools=\[  
@@ -186,6 +191,7 @@ agent \= Agent(
     propose\_changeset,  
   \],  
 )
+```
 
 The **agent decides which tool to call**, but:
 
@@ -199,6 +205,7 @@ The **agent decides which tool to call**, but:
 
 ### **Credential-safe LangGraph design**
 
+```
 \[StateGraph\]  
   ↓  
 Collect Data (tools only)  
@@ -214,6 +221,7 @@ QA Guardrail
 Approval Interrupt (human)  
   ↓  
 Execute (tool with scoped credentials)
+```
 
 Key points:
 
@@ -253,11 +261,15 @@ This prevents:
 
 ❌ Wrong expectation:
 
+```
 “AI will optimize SEO by itself”
+```
 
 ✅ Correct reality:
 
+```
 AI **continuously observes, reasons, proposes, and validates** — execution is **permissioned**
+```
 
 ### **What is fully autonomous**
 
